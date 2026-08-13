@@ -353,7 +353,23 @@ async def job_status(job_id: str):
         }
         if job["status"] == "done":
             data["download_url"] = f"/download/{job_id}"
+            data["watch_url"] = f"/watch/{job_id}"
     return JSONResponse(data)
+
+
+@app.get("/watch/{job_id}")
+async def watch(job_id: str):
+    """Inline video stream for the <video> preview player - same file as
+    /download, but without Content-Disposition: attachment, and Starlette's
+    FileResponse supports HTTP Range requests so the player can seek."""
+    with JOBS_LOCK:
+        job = JOBS.get(job_id)
+    if not job or job.get("status") != "done" or not job.get("output_path"):
+        raise HTTPException(404, "File not ready")
+    path = job["output_path"]
+    if not os.path.exists(path):
+        raise HTTPException(404, "File not found")
+    return FileResponse(path, media_type="video/mp4")
 
 
 @app.get("/download/{job_id}")
