@@ -1,1 +1,259 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Myanmar Dubbing Studio — ဗီဒီယို မြန်မာစာသံထည့်စက်</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
 
+<header class="site-header">
+  <span class="eyebrow">GitHub → Railway → Web</span>
+  <h1>Myanmar Dubbing Studio</h1>
+  <p>ဗီဒီယိုတင်ပါ — မည်သည့်ဘာသာစကားနဲ့ ရိုက်ထားထားပါစေ၊ ကျွန်ုပ်တို့က မြန်မာအသံထည့်ပြီး၊ စာတန်းထိုးပေးပါမည်။</p>
+</header>
+
+<div class="layout">
+  <!-- ================= LEFT: FORM ================= -->
+  <form id="dubForm" class="panel-left" autocomplete="off">
+    <div class="form-error" id="formError"></div>
+
+    <!-- 1. API Keys -->
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <div class="num">01</div>
+          <h2>API Key များ</h2>
+        </div>
+        <span class="hint">Server ပေါ်မှာ မသိမ်းပါ</span>
+      </div>
+      <div class="field">
+        <label class="field-label" for="geminiKeys">Gemini API Key(s) — AIza... (တစ်ကြောင်းစီ (သို့) comma ခံ၍ ရေးနိုင်သည်)</label>
+        <textarea id="geminiKeys" name="gemini_keys" placeholder="AIzaSy..." required></textarea>
+      </div>
+      <div class="field">
+        <label class="field-label" for="groqKeys">Groq API Key(s) — gsk_...</label>
+        <textarea id="groqKeys" name="groq_keys" placeholder="gsk_..." required></textarea>
+      </div>
+      <button type="button" class="small-btn" id="testKeysBtn">🔑 Key စစ်ဆေးမည်</button>
+      <div class="key-check-result" id="keyCheckResult"></div>
+      <p class="desc" style="margin-top:0.7rem">Key မရှိသေးလျှင် <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Gemini key</a> နှင့် <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq key</a> ကို အခမဲ့ ရယူနိုင်ပါသည်။</p>
+    </section>
+
+    <!-- 2. Video -->
+    <section class="card">
+      <div class="card-head">
+        <div><div class="num">02</div><h2>ဗီဒီယို</h2></div>
+        <span class="hint">Max {{ max_upload_mb }}MB</span>
+      </div>
+      <label class="dropzone" id="dropzone">
+        <input type="file" id="videoInput" name="video" accept="video/*" required>
+        <div class="dz-icon">🎬</div>
+        <div class="dz-main" id="dzText">ဗီဒီယို ဆွဲထည့် (သို့) နှိပ်၍ ရွေးပါ</div>
+        <div class="dz-sub">mp4 · mov · mkv · webm · m4v · avi</div>
+      </label>
+    </section>
+
+    <!-- 3. Voice -->
+    <section class="card">
+      <div class="card-head"><div><div class="num">03</div><h2>အသံ ရွေးချယ်ရန်</h2></div></div>
+      <div class="voice-grid">
+        {% for v in voices %}
+        <label>
+          <input type="radio" name="voice" value="{{ v.id }}" {% if v.id == default_voice %}checked{% endif %}>
+          <div class="voice-card">
+            <div class="vname">{{ '👨' if v.gender == 'male' else '👩' }} {{ v.name }}</div>
+            <div class="vmeta">{{ v.desc }}</div>
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+      <div class="field" style="margin-top:1rem">
+        <div class="toggle-row">
+          <span class="toggle-label">Multi Voice
+            <span class="desc">စာကြောင်းအလိုက် အသံနှစ်မျိုး အလှည့်ကျ ပြောင်းမည်</span>
+          </span>
+          <span class="switch"><input type="checkbox" name="multiVoice" id="multiVoice"><span class="track"><span class="thumb"></span></span></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Format -->
+    <section class="card">
+      <div class="card-head"><div><div class="num">04</div><h2>Format</h2></div></div>
+      <div class="field">
+        <label class="field-label">အချိုးအစား (Aspect Ratio)</label>
+        <div class="pill-group">
+          {% for id, lbl in [("9:16","📱 9:16 Reels"), ("16:9","🖥️ 16:9 Landscape"), ("1:1","⬛ 1:1 Square"), ("4:5","📷 4:5 Portrait")] %}
+          <label><input type="radio" name="size" value="{{ id }}" {% if id=="9:16" %}checked{% endif %}><span class="pill">{{ lbl }}</span></label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Resolution</label>
+        <div class="pill-group">
+          <label><input type="radio" name="resolution" value="720" checked><span class="pill">HD 720p</span></label>
+          <label><input type="radio" name="resolution" value="1080"><span class="pill">FHD 1080p</span></label>
+        </div>
+      </div>
+      <details class="adv">
+        <summary>အသေးစိတ် ဆက်တင်များ (Flip / Auto Trim / Auto Edit)</summary>
+        <div class="adv-body">
+          <div class="toggle-row" style="margin-bottom:0.7rem">
+            <span class="toggle-label">Flip (ပုံပြောင်း)</span>
+            <span class="switch"><input type="checkbox" name="flip"><span class="track"><span class="thumb"></span></span></span>
+          </div>
+          <div class="toggle-row" style="margin-bottom:0.7rem">
+            <span class="toggle-label">Auto Trim<span class="desc">ဗီဒီယိုကို အသံသစ်၏ကြာချိန်နှင့် ကိုက်ညီအောင် ချိန်ညှိမည်</span></span>
+            <span class="switch"><input type="checkbox" name="autoTrim" checked><span class="track"><span class="thumb"></span></span></span>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Auto Edit<span class="desc">မူရင်းဖိုင်၏ metadata များ ဖယ်ရှားမည်</span></span>
+            <span class="switch"><input type="checkbox" name="autoEdit" checked><span class="track"><span class="thumb"></span></span></span>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <!-- 5. Subtitles -->
+    <section class="card">
+      <div class="card-head"><div><div class="num">05</div><h2>စာတန်းထိုး</h2></div></div>
+      <div class="toggle-row" style="margin-bottom:1rem">
+        <span class="toggle-label">Subtitle ထည့်မည်</span>
+        <span class="switch"><input type="checkbox" name="subtitles" id="subtitlesToggle" checked><span class="track"><span class="thumb"></span></span></span>
+      </div>
+      <div id="subtitleOptions">
+        <div class="field">
+          <label class="field-label">အရောင်</label>
+          <div class="swatch-group">
+            {% for c in colors %}
+            <label><input type="radio" name="subColor" value="{{ c.id }}" {% if c.id == default_color %}checked{% endif %}><span class="swatch" style="background:{{ c.css }}" title="{{ c.name }}"></span></label>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label class="field-label" for="subFont">ဖောင့်</label>
+            <select name="subFont" id="subFont">
+              {% for f in fonts %}<option value="{{ f.id }}" {% if f.id == default_font %}selected{% endif %}>{{ f.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label" for="subFontSize">စာလုံးအရွယ်အစား</label>
+            <select name="subFontSize" id="subFontSize">
+              {% for s in font_sizes %}<option value="{{ s }}" {% if s == default_font_size %}selected{% endif %}>{{ s }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+        <details class="adv">
+          <summary>နေရာချထားမှု (Position) ချိန်ညှိရန်</summary>
+          <div class="adv-body">
+            <div class="row-2">
+              <div class="field">
+                <label class="field-label" for="subPos">Subtitle Position (%)</label>
+                <input type="number" name="subPos" id="subPos" min="2" max="95" value="80">
+              </div>
+            </div>
+            <div class="toggle-row" style="margin:0.9rem 0 0.7rem">
+              <span class="toggle-label">Auto Blur Mask<span class="desc">မူရင်းဗီဒီယို အောက်ခြေ caption ကို မှုန်ဖျောက်မည်</span></span>
+              <span class="switch"><input type="checkbox" name="autoBlur" id="autoBlur" {% if default_auto_blur %}checked{% endif %}><span class="track"><span class="thumb"></span></span></span>
+            </div>
+            <div class="row-2">
+              <div class="field">
+                <label class="field-label" for="blurPos">Blur Position (%)</label>
+                <input type="number" name="blurPos" id="blurPos" min="2" max="95" value="66">
+              </div>
+              <div class="field">
+                <label class="field-label" for="blurHeight">Blur Height (%)</label>
+                <input type="number" name="blurHeight" id="blurHeight" min="2" max="30" value="8">
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- 6. Title overlay -->
+    <section class="card">
+      <div class="card-head"><div><div class="num">06</div><h2>ခေါင်းစဉ် Overlay</h2></div></div>
+      <div class="toggle-row" style="margin-bottom:1rem">
+        <span class="toggle-label">Title ထည့်မည်<span class="desc">ဗီဒီယိုအကြောင်းအရာမှ ခေါင်းစဉ်ကို အလိုအလျောက် ဖန်တီးမည်</span></span>
+        <span class="switch"><input type="checkbox" name="titleOverlay" id="titleToggle" checked><span class="track"><span class="thumb"></span></span></span>
+      </div>
+      <div id="titleOptions">
+        <div class="field">
+          <label class="field-label">အရောင်</label>
+          <div class="swatch-group">
+            {% for c in colors %}
+            <label><input type="radio" name="titleColor" value="{{ c.id }}" {% if c.id == default_color %}checked{% endif %}><span class="swatch" style="background:{{ c.css }}" title="{{ c.name }}"></span></label>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label class="field-label" for="titleFont">ဖောင့်</label>
+            <select name="titleFont" id="titleFont">
+              {% for f in fonts %}<option value="{{ f.id }}" {% if f.id == default_font %}selected{% endif %}>{{ f.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label" for="titleFontSize">စာလုံးအရွယ်အစား</label>
+            <select name="titleFontSize" id="titleFontSize">
+              {% for s in font_sizes %}<option value="{{ s }}" {% if s == default_font_size %}selected{% endif %}>{{ s }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. Extras -->
+    <section class="card">
+      <div class="card-head"><div><div class="num">07</div><h2>Watermark · Logo · BGM</h2></div></div>
+      <div class="field">
+        <label class="field-label" for="watermark">Watermark စာသား</label>
+        <input type="text" name="watermark" id="watermark" maxlength="60" placeholder="ဥပမာ - @myaccount">
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label class="field-label" for="logoInput">Logo (ရုပ်ပုံ)</label>
+          <input type="file" name="logo" id="logoInput" accept="image/*">
+        </div>
+        <div class="field">
+          <label class="field-label" for="bgmInput">Background Music</label>
+          <input type="file" name="bgm" id="bgmInput" accept="audio/*">
+        </div>
+      </div>
+    </section>
+
+    <button type="submit" class="submit-btn" id="submitBtn">▶ ဒပ်ဘ် စတင်မည်</button>
+  </form>
+
+  <!-- ================= RIGHT: MONITOR ================= -->
+  <aside class="panel-right">
+    <div class="card monitor" id="monitor">
+      <div class="eyebrow">Studio Monitor</div>
+      <div class="vu-meter" id="vuMeter">
+        {% for i in range(10) %}<div class="bar"></div>{% endfor %}
+      </div>
+      <div class="pct" id="pct">--%</div>
+      <div class="msg" id="statusMsg">Video တင်ပြီး ဒပ်ဘ်စတင်ရန် ဘေးက form ကို ဖြည့်ပါ။</div>
+      <div id="resultArea"></div>
+    </div>
+    <div class="card" style="font-size:0.8rem; color:var(--text-faint)">
+      <strong style="color:var(--text-muted)">Pipeline</strong><br>
+      mp4 → Groq Whisper (transcribe) → Gemini (translate) → Gemini TTS → ffmpeg render → mp4 (မြန်မာအသံ)
+    </div>
+  </aside>
+</div>
+
+<footer class="site-footer">
+  Deployed via GitHub → Railway. Your API keys are sent only for this dubbing job and are never written to disk.
+</footer>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
